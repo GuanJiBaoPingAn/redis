@@ -32,14 +32,14 @@
 
 #ifndef __SDS_H
 #define __SDS_H
-
+/* 最大预分配长度 */
 #define SDS_MAX_PREALLOC (1024*1024)
 const char *SDS_NOINIT;
 
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdint.h>
-
+/* 类型别名，用于指向 sdshdr 的 buf 属性 */
 typedef char *sds;
 
 /* Note: sdshdr5 is never used, we just access the flags byte directly.
@@ -83,7 +83,7 @@ struct __attribute__ ((__packed__)) sdshdr64 {
 #define SDS_HDR_VAR(T,s) struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
 #define SDS_HDR(T,s) ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f)>>SDS_TYPE_BITS)
-
+/* 返回 sds 实际保存的字符串的长度 T = O(1) */
 static inline size_t sdslen(const sds s) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -100,7 +100,7 @@ static inline size_t sdslen(const sds s) {
     }
     return 0;
 }
-
+/* 返回 sds 可用空间的长度 T = O(1) */
 static inline size_t sdsavail(const sds s) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {

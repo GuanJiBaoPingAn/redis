@@ -35,77 +35,97 @@
 
 #include <time.h>
 
+/* 事件执行状态 */
 #define AE_OK 0
 #define AE_ERR -1
 
-#define AE_NONE 0       /* No events registered. */
-#define AE_READABLE 1   /* Fire when descriptor is readable. */
-#define AE_WRITABLE 2   /* Fire when descriptor is writable. */
+/* 文件事件状态 */
+#define AE_NONE 0       /* No events registered. 未设置 */
+#define AE_READABLE 1   /* Fire when descriptor is readable. 可读 */
+#define AE_WRITABLE 2   /* Fire when descriptor is writable. 可写 */
 #define AE_BARRIER 4    /* With WRITABLE, never fire the event if the
                            READABLE event already fired in the same event
                            loop iteration. Useful when you want to persist
                            things to disk before sending replies, and want
-                           to do that in a group fashion. */
+                           to do that in a group fashion. 用于在发送响应前持久化*/
 
+/* 时间处理器的执行 flags */
+/* 文件事件 */
 #define AE_FILE_EVENTS 1
+/* 时间事件 */
 #define AE_TIME_EVENTS 2
+/* 所有事件 */
 #define AE_ALL_EVENTS (AE_FILE_EVENTS|AE_TIME_EVENTS)
+/* 不阻塞，也不进行等待 */
 #define AE_DONT_WAIT 4
+/* 休眠后调用 */
 #define AE_CALL_AFTER_SLEEP 8
 
+/* 决定时间事件是否要持续执行的 flag */
 #define AE_NOMORE -1
 #define AE_DELETED_EVENT_ID -1
 
 /* Macros */
 #define AE_NOTUSED(V) ((void) V)
 
+/* 事件处理器状态 */
 struct aeEventLoop;
 
-/* Types and data structures */
+/* Types and data structures 事件接口 */
 typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData, int mask);
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
-/* File event structure */
+/* File event structure 文件事件结构 */
 typedef struct aeFileEvent {
-    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
-    aeFileProc *rfileProc;
-    aeFileProc *wfileProc;
-    void *clientData;
+    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) 监听事件类型掩码 */
+    aeFileProc *rfileProc; // 读事件处理器
+    aeFileProc *wfileProc; // 写事件处理器
+    void *clientData; // 多路复用库的私有数据
 } aeFileEvent;
 
-/* Time event structure */
+/* Time event structure 时间事件结构 */
 typedef struct aeTimeEvent {
-    long long id; /* time event identifier. */
+    long long id; /* time event identifier. 时间事件的唯一标识符 */
+
+    /* 事件的到达时间 */
     long when_sec; /* seconds */
     long when_ms; /* milliseconds */
+
+    /* 事件处理函数 */
     aeTimeProc *timeProc;
+
+    /* 事件释放函数 */
     aeEventFinalizerProc *finalizerProc;
+
+    /* 多路复用库的私有数据 */
     void *clientData;
+
+    /* 时间事件链表 */
     struct aeTimeEvent *prev;
     struct aeTimeEvent *next;
 } aeTimeEvent;
 
-/* A fired event */
+/* A fired event 已就绪事件 */
 typedef struct aeFiredEvent {
-    int fd;
-    int mask;
+    int fd; /* 已就绪文件描述符 */
+    int mask; /* 事件类型掩码 */
 } aeFiredEvent;
 
-/* State of an event based program */
+/* State of an event based program 事件处理器的状态 */
 typedef struct aeEventLoop {
-    int maxfd;   /* highest file descriptor currently registered */
-    int setsize; /* max number of file descriptors tracked */
-    long long timeEventNextId;
-    time_t lastTime;     /* Used to detect system clock skew */
-    aeFileEvent *events; /* Registered events */
-    aeFiredEvent *fired; /* Fired events */
-    aeTimeEvent *timeEventHead;
-    int stop;
-    void *apidata; /* This is used for polling API specific data */
-    aeBeforeSleepProc *beforesleep;
-    aeBeforeSleepProc *aftersleep;
+    int maxfd;   /* highest file descriptor currently registered 目前已注册的最大描述符 */
+    int setsize; /* max number of file descriptors tracked 目前已追踪的最大描述符 */
+    long long timeEventNextId; /* 用于生成时间事件 id */
+    time_t lastTime;     /* Used to detect system clock skew 最后一次执行时间事件的时间 */
+    aeFileEvent *events; /* Registered events 已注册的文件事件 */
+    aeFiredEvent *fired; /* Fired events 已就绪的文件事件 */
+    aeTimeEvent *timeEventHead; /* 时间事件 */
+    int stop; /* 事件处理器的开关 */
+    void *apidata; /* This is used for polling API specific data 多路复用库的私有数据 */
+    aeBeforeSleepProc *beforesleep; /* 在处理事件前要执行的函数 */
+    aeBeforeSleepProc *aftersleep; /* 在处理事件后要执行的函数 */
     int flags;
 } aeEventLoop;
 

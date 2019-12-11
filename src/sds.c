@@ -73,7 +73,16 @@ static inline char sdsReqType(size_t string_size) {
 #endif
 }
 
-/* Create a new sds string with the content specified by the 'init' pointer
+/* 根据给定的初始化字符串 init 和字符串长度 initlen
+ * 创建一个新的 sds
+ * 参数
+ *  init ：初始化字符串指针
+ *  initlen ：初始化字符串的长度
+ * 返回值
+ *  sds ：创建成功返回 sdshdr 相对应的 sds
+ *        创建失败返回 NULL
+ * 复杂度 T = O(N)
+ * Create a new sds string with the content specified by the 'init' pointer
  * and 'initlen'.
  * If NULL is used for 'init' the string is initialized with zero bytes.
  * If SDS_NOINIT is used, the buffer is left uninitialized;
